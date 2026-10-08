@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Times Tables Trainer</title>
+<style>
+  :root { --bg:#1e1b4b; --card:#312e81; --accent:#fbbf24; --good:#34d399; --bad:#f87171; --text:#f5f3ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+         background:linear-gradient(160deg,#1e1b4b,#4c1d95); color:var(--text);
+         font-family:-apple-system,"SF Pro Rounded","Helvetica Neue",sans-serif; }
+  .card { background:var(--card); border-radius:24px; padding:32px; width:min(92vw,560px);
+          box-shadow:0 20px 50px rgba(0,0,0,.4); text-align:center; }
+  h1 { margin:0 0 8px; font-size:2rem; }
+  p.sub { margin:0 0 20px; opacity:.8; }
+  .tables { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+  .tables button { padding:14px 0; font-size:1.3rem; border-radius:14px; border:2px solid transparent;
+                   background:#4338ca; color:var(--text); cursor:pointer; }
+  .tables button.on { background:var(--accent); color:#1e1b4b; font-weight:700; }
+  .row { display:flex; gap:10px; justify-content:center; margin-bottom:20px; flex-wrap:wrap; }
+  .row button, .big { padding:10px 16px; border-radius:12px; border:none; background:#4338ca;
+                      color:var(--text); font-size:1rem; cursor:pointer; }
+  .big { background:var(--accent); color:#1e1b4b; font-size:1.4rem; font-weight:700; padding:14px 40px; }
+  .hud { display:flex; justify-content:space-between; font-size:1.1rem; margin-bottom:10px; }
+  .question { font-size:4.5rem; font-weight:800; margin:20px 0; }
+  input { width:60%; font-size:2.5rem; text-align:center; border-radius:16px; border:3px solid var(--accent);
+          padding:10px; background:#1e1b4b; color:var(--text); outline:none; }
+  .feedback { height:2.2rem; margin-top:16px; font-size:1.5rem; font-weight:700; }
+  .good { color:var(--good); } .bad { color:var(--bad); }
+  .bar { height:10px; background:#1e1b4b; border-radius:5px; overflow:hidden; margin-bottom:6px; }
+  .bar > div { height:100%; background:var(--accent); width:0; transition:width .2s; }
+  .hidden { display:none; }
+  .stars { font-size:3rem; margin:10px 0; }
+  .tricky { opacity:.85; margin:10px 0 20px; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Setup screen -->
+  <div id="setup">
+    <h1>✖️ Times Tables</h1>
+    <p class="sub">Pick the tables you want to practise</p>
+    <div class="tables" id="tables"></div>
+    <div class="row">
+      <button id="all">All</button>
+      <button id="none">None</button>
+      <button id="hard">7–12</button>
+    </div>
+    <p class="sub">10 questions per round</p>
+    <button class="big" id="start">Start!</button>
+  </div>
+
+  <!-- Quiz screen -->
+  <div id="quiz" class="hidden">
+    <div class="hud"><span id="qnum"></span><span id="score"></span><span id="streak"></span></div>
+    <div class="bar"><div id="progress"></div></div>
+    <div class="question" id="question"></div>
+    <input id="answer" type="number" inputmode="numeric" autocomplete="off">
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <!-- Result screen -->
+  <div id="result" class="hidden">
+    <h1 id="rtitle"></h1>
+    <div class="stars" id="stars"></div>
+    <p class="sub" id="rscore"></p>
+    <p class="tricky" id="tricky"></p>
+    <button class="big" id="again">Play again</button>
+    <div class="row" style="margin-top:16px"><button id="menu">Change tables</button></div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const ROUND = 10;
+let selected = new Set([2,3,4,5]);
+let questions = [], idx = 0, score = 0, streak = 0, best = 0, missed = [], locked = false;
+
+// ---- setup screen ----
+function drawTables() {
+  $('tables').innerHTML = '';
+  for (let n = 1; n <= 12; n++) {
+    const b = document.createElement('button');
+    b.textContent = n;
+    b.className = selected.has(n) ? 'on' : '';
+    b.onclick = () => { selected.has(n) ? selected.delete(n) : selected.add(n); drawTables(); };
+    $('tables').appendChild(b);
+  }
+}
+$('all').onclick  = () => { selected = new Set([1,2,3,4,5,6,7,8,9,10,11,12]); drawTables(); };
+$('none').onclick = () => { selected.clear(); drawTables(); };
+$('hard').onclick = () => { selected = new Set([7,8,9,10,11,12]); drawTables(); };
+drawTables();
+
+// ---- game ----
+function show(screen) {
+  ['setup','quiz','result'].forEach(s => $(s).classList.toggle('hidden', s !== screen));
+}
+
+function buildQuestions() {
+  const tabs = [...selected];
+  const qs = [];
+  while (qs.length < ROUND) {
+    const a = tabs[Math.floor(Math.random()*tabs.length)];
+    const b = 1 + Math.floor(Math.random()*12);
+    // avoid immediate repeats
+    if (qs.length && qs[qs.length-1].a === a && qs[qs.length-1].b === b) continue;
+    // randomly flip order so 7×8 and 8×7 both appear
+    qs.push(Math.random() < .5 ? {a, b} : {a:b, b:a});
+  }
+  return qs;
+}
+
+function start() {
+  if (selected.size === 0) { alert('Pick at least one table!'); return; }
+  questions = buildQuestions();
+  idx = 0; score = 0; streak = 0; best = 0; missed = [];
+  show('quiz');
+  nextQuestion();
+}
+
+function nextQuestion() {
+  if (idx >= ROUND) return finish();
+  const q = questions[idx];
+  $('question').textContent = `${q.a} × ${q.b}`;
+  $('qnum').textContent = `Question ${idx+1}/${ROUND}`;
+  $('score').textContent = `⭐ ${score}`;
+  $('streak').textContent = streak >= 2 ? `🔥 ${streak}` : '';
+  $('progress').style.width = (idx/ROUND*100) + '%';
+  $('feedback').textContent = '';
+  $('answer').value = '';
+  $('answer').focus();
+  locked = false;
+}
+
+function check() {
+  if (locked || $('answer').value === '') return;
+  locked = true;
+  const q = questions[idx];
+  const correct = q.a * q.b;
+  if (Number($('answer').value) === correct) {
+    score++; streak++; best = Math.max(best, streak);
+    const praise = ['Yes!','Brilliant!','Spot on!','Nailed it!','Super!'];
+    $('feedback').innerHTML = `<span class="good">${praise[Math.floor(Math.random()*praise.length)]}</span>`;
+    idx++;
+    setTimeout(nextQuestion, 600);
+  } else {
+    streak = 0;
+    missed.push(`${q.a} × ${q.b} = ${correct}`);
+    $('feedback').innerHTML = `<span class="bad">Not quite — ${q.a} × ${q.b} = ${correct}</span>`;
+    idx++;
+    setTimeout(nextQuestion, 1800);
+  }
+}
+
+function finish() {
+  show('result');
+  const pct = score / ROUND;
+  $('rtitle').textContent = pct === 1 ? 'Perfect! 🏆' : pct >= .8 ? 'Great job! 🎉' : pct >= .5 ? 'Good effort! 💪' : 'Keep practising! 🌱';
+  $('stars').textContent = '⭐'.repeat(Math.round(pct*5)) + '☆'.repeat(5 - Math.round(pct*5));
+  $('rscore').textContent = `You got ${score} out of ${ROUND}. Best streak: ${best}`;
+  const uniq = [...new Set(missed)];
+  $('tricky').textContent = uniq.length ? 'Tricky ones: ' + uniq.join('  •  ') : '';
+}
+
+$('start').onclick = start;
+$('again').onclick = start;
+$('menu').onclick  = () => show('setup');
+$('answer').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+</script>
+</body>
+</html>
