@@ -2,12 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e1b4b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Times Tables">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Times Tables Trainer</title>
 <style>
   :root { --bg:#1e1b4b; --card:#312e81; --accent:#fbbf24; --good:#34d399; --bad:#f87171; --mid:#fbbf24; --none:#4b4b7a; --text:#f5f3ff; }
-  * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button { touch-action: manipulation; font-family: inherit; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin:0; min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center;
+         overscroll-behavior:none; -webkit-user-select:none; user-select:none;
          background:linear-gradient(160deg,#1e1b4b,#4c1d95); color:var(--text);
          font-family:-apple-system,"SF Pro Rounded","Helvetica Neue",sans-serif; }
   .card { background:var(--card); border-radius:24px; padding:32px; width:min(92vw,560px);
@@ -24,13 +35,21 @@
   .big { background:var(--accent); color:#1e1b4b; font-size:1.4rem; font-weight:700; padding:14px 40px; }
   .hud { display:flex; justify-content:space-between; font-size:1.1rem; margin-bottom:10px; }
   .question { font-size:4.5rem; font-weight:800; margin:20px 0; }
-  input { width:60%; font-size:2.5rem; text-align:center; border-radius:16px; border:3px solid var(--accent);
-          padding:10px; background:#1e1b4b; color:var(--text); outline:none; }
+  .answer { width:60%; min-height:76px; margin:0 auto; font-size:2.5rem; line-height:70px; text-align:center;
+            border-radius:16px; border:3px solid var(--accent); background:#1e1b4b; color:var(--text); }
+  .answer.empty { opacity:.4; }
   .feedback { height:2.2rem; margin-top:16px; font-size:1.5rem; font-weight:700; }
+  .pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; }
+  .pad button { min-height:64px; font-size:1.8rem; font-weight:700; border-radius:16px; border:none;
+                background:#4338ca; color:var(--text); cursor:pointer; }
+  .pad button:active { background:#5b50e0; transform:scale(.97); }
+  .pad .del { font-size:1.5rem; }
+  .pad .ok { background:var(--accent); color:#1e1b4b; font-size:1.3rem; }
+  .pad .ok:active { background:#fcd34d; }
   .good { color:var(--good); } .bad { color:var(--bad); }
   .bar { height:10px; background:#1e1b4b; border-radius:5px; overflow:hidden; margin-bottom:6px; }
   .bar > div { height:100%; background:var(--accent); width:0; transition:width .2s; }
-  .hidden { display:none; }
+  .hidden { display:none !important; }
   .stars { font-size:3rem; margin:10px 0; }
   .tricky { opacity:.85; margin:10px 0 20px; }
   .msg { height:1.4rem; margin:0 0 10px; color:var(--bad); font-weight:600; }
@@ -46,6 +65,35 @@
   .legend { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:.85rem; margin-bottom:14px; }
   .legend i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
   .danger { background:#7f1d1d !important; }
+  .grid .c { cursor:pointer; }
+  .grid .c.sel { outline:3px solid #fff; outline-offset:1px; }
+  .pdetail { min-height:1.6rem; margin:0 0 12px; font-weight:600; }
+  .row button { min-height:44px; }
+
+  /* short screens (e.g. a phone held sideways): tighten up so the keypad stays in view */
+  @media (max-height:520px) {
+    .card { padding:10px 16px; }
+    .hud { margin-bottom:4px; }
+    .question { font-size:2.4rem; margin:2px 0; }
+    .answer { min-height:48px; line-height:42px; font-size:1.8rem; }
+    .feedback { height:1.5rem; margin-top:4px; font-size:1.1rem; }
+    .pad { margin-top:6px; gap:6px; grid-template-columns:repeat(6,1fr); }
+    .pad button { min-height:44px; font-size:1.3rem; }
+    .pad .del { grid-column:auto; }
+  }
+
+  /* phones: use the whole screen, keypad at the bottom */
+  @media (max-width:600px) {
+    body { align-items:stretch; }
+    .card { width:100%; border-radius:0; box-shadow:none; display:flex; flex-direction:column; justify-content:center;
+            padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px); }
+    #quiz { flex:1; flex-direction:column; justify-content:flex-start; }
+    #quiz:not(.hidden) { display:flex; }
+    #quiz .qarea { flex:1; display:flex; flex-direction:column; justify-content:center; }
+    .question { font-size:4rem; margin:10px 0; }
+    .answer { width:70%; }
+    .tables button { padding:16px 0; }
+  }
 </style>
 </head>
 <body>
@@ -70,9 +118,19 @@
   <div id="quiz" class="hidden">
     <div class="hud"><span id="qnum"></span><span id="score"></span><span id="streak"></span></div>
     <div class="bar"><div id="progress"></div></div>
-    <div class="question" id="question"></div>
-    <input id="answer" type="number" inputmode="numeric" autocomplete="off">
-    <div class="feedback" id="feedback"></div>
+    <div class="qarea">
+      <div class="question" id="question"></div>
+      <div class="answer empty" id="answer">?</div>
+      <div class="feedback" id="feedback"></div>
+    </div>
+    <div class="pad" id="pad">
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
+      <button class="del" data-k="del" aria-label="Delete">⌫</button>
+      <button data-k="0">0</button>
+      <button class="ok" data-k="ok">Check</button>
+    </div>
   </div>
 
   <!-- Result screen -->
@@ -93,6 +151,7 @@
     <h1>📊 My progress</h1>
     <p class="sub" id="pstats"></p>
     <div class="grid" id="grid"></div>
+    <div class="pdetail" id="pdetail">Tap a square to see how it's going</div>
     <div class="legend">
       <span><i class="s-good"></i>Learned</span>
       <span><i class="s-mid"></i>Getting there</span>
@@ -230,17 +289,40 @@ function nextQuestion() {
   $('streak').textContent = streak >= 2 ? `🔥 ${streak}` : '';
   $('progress').style.width = (idx / questions.length * 100) + '%';
   $('feedback').textContent = '';
-  $('answer').value = '';
-  $('answer').focus();
+  setAnswer('');
   locked = false;
 }
 
+// ---- answer entry: on-screen keypad and physical keyboard share this ----
+let ans = '';
+function setAnswer(s) {
+  ans = s;
+  $('answer').textContent = s === '' ? '?' : s;
+  $('answer').classList.toggle('empty', s === '');
+}
+function pressKey(k) {
+  if (locked) return;
+  if (k === 'ok') return check();
+  if (k === 'del') return setAnswer(ans.slice(0, -1));
+  if (ans.length < 3) setAnswer(ans + k);
+}
+$('pad').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (b) pressKey(b.dataset.k);
+});
+document.addEventListener('keydown', e => {
+  if ($('quiz').classList.contains('hidden') || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^[0-9]$/.test(e.key)) pressKey(e.key);
+  else if (e.key === 'Backspace') { e.preventDefault(); pressKey('del'); }
+  else if (e.key === 'Enter') pressKey('ok');
+});
+
 function check() {
-  if (locked || $('answer').value === '') return;
+  if (locked || ans === '') return;
   locked = true;
   const q = questions[idx];
   const correct = q.a * q.b;
-  const ok = Number($('answer').value) === correct;
+  const ok = Number(ans) === correct;
   record(q.a, q.b, ok);
   if (ok) {
     streak++; best = Math.max(best, streak);
@@ -277,22 +359,32 @@ function finish() {
 function drawProgress() {
   const g = $('grid');
   g.innerHTML = '';
-  const cell = (text, cls) => { const d = document.createElement('div'); d.textContent = text; d.className = cls || ''; g.appendChild(d); };
+  const cell = (text, cls) => { const d = document.createElement('div'); d.textContent = text; d.className = cls || ''; g.appendChild(d); return d; };
+  $('pdetail').textContent = "Tap a square to see how it's going";
   cell('', 'h');
   for (let b = 1; b <= 12; b++) cell(b, 'h');
   let learned = 0;
   for (let a = 1; a <= 12; a++) {
     cell(a, 'h');
     for (let b = 1; b <= 12; b++) {
-      const s = status(a, b);
-      cell('', 's-' + s);
-      g.lastChild.title = `${a} × ${b} = ${a*b}`;
+      const d = cell('', 'c s-' + status(a, b));
+      d.dataset.a = a; d.dataset.b = b;
     }
   }
   for (let a = 1; a <= 12; a++) for (let b = a; b <= 12; b++) if (status(a, b) === 'good') learned++;
   $('pstats').textContent = `${learned} of 78 facts learned`;
   $('resetConfirm').classList.add('hidden');
 }
+$('grid').addEventListener('click', e => {
+  const c = e.target.closest('.c');
+  if (!c) return;
+  document.querySelectorAll('#grid .sel').forEach(x => x.classList.remove('sel'));
+  c.classList.add('sel');
+  const a = +c.dataset.a, b = +c.dataset.b;
+  const p = progress[factKey(a, b)];
+  $('pdetail').textContent = `${a} × ${b} = ${a*b} — ` +
+    (p ? `right ${p.right}, wrong ${p.wrong}` : 'not tried yet');
+});
 function showProgress(from) {
   lastScreen = from;
   drawProgress();
@@ -309,7 +401,11 @@ $('resetYes').onclick = () => { progress = {}; saveProgress(); drawProgress(); }
 $('start').onclick = start;
 $('again').onclick = start;
 $('menu').onclick  = () => show('setup');
-$('answer').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+
+// offline support (only works when served over https, e.g. GitHub Pages)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>

@@ -5,6 +5,18 @@ Versions follow [Semantic Versioning](https://semver.org/): new features bump th
 
 ## [Unreleased]
 
+### Added
+- On-screen number keypad with a Check button, so answers can be entered on an iPhone (the phone's own number pad has no Return key). Typing on a computer keyboard still works.
+- Can be added to the iPhone Home Screen as an app, with its own icon and name, opening full-screen.
+- Works offline once opened from a web address (for example GitHub Pages).
+- Tap a square in the progress grid to see that fact and how often it was right or wrong.
+
+### Changed
+- On phones the app now uses the whole screen, with the keypad at the bottom and room for the notch and the Home bar.
+- The progress grid fits the width of a phone screen.
+- Buttons are bigger and easier to hit with a finger, and double-tap zoom is switched off.
+- The layout also fits when the phone is held sideways.
+
 ## [0.2.0] - 2026-10-08
 
 ### Added

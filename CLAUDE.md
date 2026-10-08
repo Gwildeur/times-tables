@@ -1,6 +1,6 @@
 # Times Tables Trainer
 
-Single-file web app (`index.html`, no build step) for practising times tables. Opened by double-click in Safari.
+Web app (`index.html` holds all the app code, no build step) for practising times tables. Opened by double-click in Safari, or hosted and added to the iPhone Home Screen. `manifest.webmanifest`, `sw.js` and `icons/` provide the Home Screen icon and offline support.
 
 ## Commits
 - Claude commits after each finished and tested change.
@@ -12,3 +12,4 @@ Single-file web app (`index.html`, no build step) for practising times tables. O
 - Add entries under `## [Unreleased]` while working. When the user says to release, move them under a new `## [x.y.z] - YYYY-MM-DD` heading (details in the `commit-messages` skill).
 - Use the sections Added / Changed / Fixed / Removed, and write for a non-technical reader.
 - Version numbers: new feature = minor bump, bug fix = patch bump.
+- When releasing, also bump the `CACHE` name in `sw.js` to the new version so installed copies update.
