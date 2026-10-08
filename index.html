@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Times Tables Trainer</title>
 <style>
-  :root { --bg:#1e1b4b; --card:#312e81; --accent:#fbbf24; --good:#34d399; --bad:#f87171; --text:#f5f3ff; }
+  :root { --bg:#1e1b4b; --card:#312e81; --accent:#fbbf24; --good:#34d399; --bad:#f87171; --mid:#fbbf24; --none:#4b4b7a; --text:#f5f3ff; }
   * { box-sizing: border-box; }
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
          background:linear-gradient(160deg,#1e1b4b,#4c1d95); color:var(--text);
@@ -33,6 +33,19 @@
   .hidden { display:none; }
   .stars { font-size:3rem; margin:10px 0; }
   .tricky { opacity:.85; margin:10px 0 20px; }
+  .msg { height:1.4rem; margin:0 0 10px; color:var(--bad); font-weight:600; }
+  .link { background:none; border:none; color:var(--text); opacity:.8; text-decoration:underline; cursor:pointer; font-size:1rem; margin-top:14px; }
+
+  /* progress grid */
+  .grid { display:grid; grid-template-columns:repeat(13,1fr); gap:3px; margin:10px 0 14px; }
+  .grid div { aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+              font-size:.7rem; border-radius:5px; color:#1e1b4b; font-weight:700; }
+  .grid .h { background:none; color:var(--text); opacity:.8; }
+  .s-none { background:var(--none); } .s-weak { background:var(--bad); }
+  .s-mid { background:var(--mid); } .s-good { background:var(--good); }
+  .legend { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:.85rem; margin-bottom:14px; }
+  .legend i { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .danger { background:#7f1d1d !important; }
 </style>
 </head>
 <body>
@@ -48,8 +61,9 @@
       <button id="none">None</button>
       <button id="hard">7–12</button>
     </div>
-    <p class="sub">10 questions per round</p>
+    <div class="msg" id="setupmsg"></div>
     <button class="big" id="start">Start!</button>
+    <div><button class="link" id="showprogress">📊 My progress</button></div>
   </div>
 
   <!-- Quiz screen -->
@@ -68,16 +82,80 @@
     <p class="sub" id="rscore"></p>
     <p class="tricky" id="tricky"></p>
     <button class="big" id="again">Play again</button>
-    <div class="row" style="margin-top:16px"><button id="menu">Change tables</button></div>
+    <div class="row" style="margin-top:16px">
+      <button id="menu">Change tables</button>
+      <button id="resprogress">📊 My progress</button>
+    </div>
+  </div>
+
+  <!-- Progress screen -->
+  <div id="progressScreen" class="hidden">
+    <h1>📊 My progress</h1>
+    <p class="sub" id="pstats"></p>
+    <div class="grid" id="grid"></div>
+    <div class="legend">
+      <span><i class="s-good"></i>Learned</span>
+      <span><i class="s-mid"></i>Getting there</span>
+      <span><i class="s-weak"></i>Needs work</span>
+      <span><i class="s-none"></i>Not tried</span>
+    </div>
+    <button class="big" id="pback">Back</button>
+    <div>
+      <button class="link" id="reset">Reset progress</button>
+      <div id="resetConfirm" class="row hidden" style="margin-top:10px">
+        <span style="align-self:center">Delete all progress?</span>
+        <button class="danger" id="resetYes">Yes, delete</button>
+        <button id="resetNo">Cancel</button>
+      </div>
+    </div>
   </div>
 
 </div>
 
 <script>
 const $ = id => document.getElementById(id);
-const ROUND = 10;
+const ROUND = 10;          // questions per round (retries come on top of these)
+const WEAK_SHARE = 5;      // of the 10, aim for this many from facts not yet learned
+const LEARNED_AT = 3;      // correct in a row = learned
+const RETRY_GAP = 3;       // a missed question comes back this many questions later
+const STORE_KEY = 'timesTablesProgress.v1';
+
 let selected = new Set([2,3,4,5]);
-let questions = [], idx = 0, score = 0, streak = 0, best = 0, missed = [], locked = false;
+let questions = [], idx = 0, score = 0, streak = 0, best = 0, missed = [], locked = false, firstTotal = ROUND;
+let lastScreen = 'setup';
+
+// ---- progress storage: { "7x8": {right, wrong, streak} } (7×8 and 8×7 are the same fact) ----
+const factKey = (a, b) => `${Math.min(a,b)}x${Math.max(a,b)}`;
+let progress = loadProgress();
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveProgress() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ }
+}
+function record(a, b, correct) {
+  const k = factKey(a, b);
+  const p = progress[k] || (progress[k] = {right:0, wrong:0, streak:0});
+  if (correct) { p.right++; p.streak++; } else { p.wrong++; p.streak = 0; }
+  saveProgress();
+}
+function status(a, b) {
+  const p = progress[factKey(a, b)];
+  if (!p) return 'none';
+  if (p.streak >= LEARNED_AT) return 'good';
+  return p.streak >= 1 ? 'mid' : 'weak';
+}
+// how likely a fact is to be picked
+function weight(a, b) {
+  const s = status(a, b);
+  return {none:3, weak:8, mid:3, good:1}[s];
+}
+
+// ---- screens ----
+function show(screen) {
+  ['setup','quiz','result','progressScreen'].forEach(s => $(s).classList.toggle('hidden', s !== screen));
+}
 
 // ---- setup screen ----
 function drawTables() {
@@ -86,50 +164,71 @@ function drawTables() {
     const b = document.createElement('button');
     b.textContent = n;
     b.className = selected.has(n) ? 'on' : '';
-    b.onclick = () => { selected.has(n) ? selected.delete(n) : selected.add(n); drawTables(); };
+    b.onclick = () => { selected.has(n) ? selected.delete(n) : selected.add(n); $('setupmsg').textContent = ''; drawTables(); };
     $('tables').appendChild(b);
   }
 }
-$('all').onclick  = () => { selected = new Set([1,2,3,4,5,6,7,8,9,10,11,12]); drawTables(); };
+$('all').onclick  = () => { selected = new Set([1,2,3,4,5,6,7,8,9,10,11,12]); $('setupmsg').textContent=''; drawTables(); };
 $('none').onclick = () => { selected.clear(); drawTables(); };
-$('hard').onclick = () => { selected = new Set([7,8,9,10,11,12]); drawTables(); };
+$('hard').onclick = () => { selected = new Set([7,8,9,10,11,12]); $('setupmsg').textContent=''; drawTables(); };
 drawTables();
 
-// ---- game ----
-function show(screen) {
-  ['setup','quiz','result'].forEach(s => $(s).classList.toggle('hidden', s !== screen));
+// ---- building a round: about half from facts not yet learned, weighted towards weak ones ----
+function pickWeighted(pool) {
+  const total = pool.reduce((s, q) => s + weight(q.a, q.b), 0);
+  let r = Math.random() * total;
+  for (const q of pool) { r -= weight(q.a, q.b); if (r <= 0) return q; }
+  return pool[pool.length - 1];
 }
 
 function buildQuestions() {
-  const tabs = [...selected];
-  const qs = [];
-  while (qs.length < ROUND) {
-    const a = tabs[Math.floor(Math.random()*tabs.length)];
-    const b = 1 + Math.floor(Math.random()*12);
-    // avoid immediate repeats
-    if (qs.length && qs[qs.length-1].a === a && qs[qs.length-1].b === b) continue;
-    // randomly flip order so 7×8 and 8×7 both appear
-    qs.push(Math.random() < .5 ? {a, b} : {a:b, b:a});
+  const all = [];
+  for (const a of selected) for (let b = 1; b <= 12; b++) all.push({a, b});
+  const chosen = [];
+  const usedKeys = new Set();
+  const take = (pool, n) => {
+    let attempts = 0;
+    while (n > 0 && attempts++ < 200) {
+      const fresh = pool.filter(q => !usedKeys.has(factKey(q.a, q.b)));
+      if (!fresh.length) break;
+      const q = pickWeighted(fresh);
+      usedKeys.add(factKey(q.a, q.b));
+      chosen.push(q); n--;
+    }
+    return n;
+  };
+  const notLearned = all.filter(q => status(q.a, q.b) !== 'good');
+  take(notLearned, WEAK_SHARE);
+  let left = ROUND - chosen.length;
+  left = take(all, left);
+  // tiny table selection (e.g. only the 1 table) — allow repeats to fill the round
+  while (chosen.length < ROUND) chosen.push(pickWeighted(all));
+  // shuffle, then flip operands randomly so 7×8 and 8×7 both appear
+  for (let i = chosen.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chosen[i], chosen[j]] = [chosen[j], chosen[i]];
   }
-  return qs;
+  return chosen.map(q => Math.random() < .5 ? {a:q.a, b:q.b} : {a:q.b, b:q.a});
 }
 
+// ---- game ----
 function start() {
-  if (selected.size === 0) { alert('Pick at least one table!'); return; }
+  if (selected.size === 0) { $('setupmsg').textContent = 'Pick at least one table!'; show('setup'); return; }
   questions = buildQuestions();
+  firstTotal = questions.length;
   idx = 0; score = 0; streak = 0; best = 0; missed = [];
   show('quiz');
   nextQuestion();
 }
 
 function nextQuestion() {
-  if (idx >= ROUND) return finish();
+  if (idx >= questions.length) return finish();
   const q = questions[idx];
   $('question').textContent = `${q.a} × ${q.b}`;
-  $('qnum').textContent = `Question ${idx+1}/${ROUND}`;
+  $('qnum').textContent = q.retry ? 'Try again 🔁' : `Question ${Math.min(idx+1, firstTotal)}/${firstTotal}`;
   $('score').textContent = `⭐ ${score}`;
   $('streak').textContent = streak >= 2 ? `🔥 ${streak}` : '';
-  $('progress').style.width = (idx/ROUND*100) + '%';
+  $('progress').style.width = (idx / questions.length * 100) + '%';
   $('feedback').textContent = '';
   $('answer').value = '';
   $('answer').focus();
@@ -141,8 +240,11 @@ function check() {
   locked = true;
   const q = questions[idx];
   const correct = q.a * q.b;
-  if (Number($('answer').value) === correct) {
-    score++; streak++; best = Math.max(best, streak);
+  const ok = Number($('answer').value) === correct;
+  record(q.a, q.b, ok);
+  if (ok) {
+    streak++; best = Math.max(best, streak);
+    if (!q.retry) score++;
     const praise = ['Yes!','Brilliant!','Spot on!','Nailed it!','Super!'];
     $('feedback').innerHTML = `<span class="good">${praise[Math.floor(Math.random()*praise.length)]}</span>`;
     idx++;
@@ -151,6 +253,9 @@ function check() {
     streak = 0;
     missed.push(`${q.a} × ${q.b} = ${correct}`);
     $('feedback').innerHTML = `<span class="bad">Not quite — ${q.a} × ${q.b} = ${correct}</span>`;
+    // bring it back a few questions later (or at the end if the round is nearly over)
+    const at = Math.min(idx + 1 + RETRY_GAP, questions.length);
+    questions.splice(at, 0, {a:q.a, b:q.b, retry:true});
     idx++;
     setTimeout(nextQuestion, 1800);
   }
@@ -158,13 +263,48 @@ function check() {
 
 function finish() {
   show('result');
-  const pct = score / ROUND;
+  lastScreen = 'result';
+  const pct = score / firstTotal;
   $('rtitle').textContent = pct === 1 ? 'Perfect! 🏆' : pct >= .8 ? 'Great job! 🎉' : pct >= .5 ? 'Good effort! 💪' : 'Keep practising! 🌱';
-  $('stars').textContent = '⭐'.repeat(Math.round(pct*5)) + '☆'.repeat(5 - Math.round(pct*5));
-  $('rscore').textContent = `You got ${score} out of ${ROUND}. Best streak: ${best}`;
+  const stars = Math.round(pct * 5);
+  $('stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(5 - stars);
+  $('rscore').textContent = `You got ${score} out of ${firstTotal} first time. Best streak: ${best}`;
   const uniq = [...new Set(missed)];
   $('tricky').textContent = uniq.length ? 'Tricky ones: ' + uniq.join('  •  ') : '';
 }
+
+// ---- progress screen ----
+function drawProgress() {
+  const g = $('grid');
+  g.innerHTML = '';
+  const cell = (text, cls) => { const d = document.createElement('div'); d.textContent = text; d.className = cls || ''; g.appendChild(d); };
+  cell('', 'h');
+  for (let b = 1; b <= 12; b++) cell(b, 'h');
+  let learned = 0;
+  for (let a = 1; a <= 12; a++) {
+    cell(a, 'h');
+    for (let b = 1; b <= 12; b++) {
+      const s = status(a, b);
+      cell('', 's-' + s);
+      g.lastChild.title = `${a} × ${b} = ${a*b}`;
+    }
+  }
+  for (let a = 1; a <= 12; a++) for (let b = a; b <= 12; b++) if (status(a, b) === 'good') learned++;
+  $('pstats').textContent = `${learned} of 78 facts learned`;
+  $('resetConfirm').classList.add('hidden');
+}
+function showProgress(from) {
+  lastScreen = from;
+  drawProgress();
+  show('progressScreen');
+}
+
+$('showprogress').onclick = () => showProgress('setup');
+$('resprogress').onclick  = () => showProgress('result');
+$('pback').onclick = () => show(lastScreen);
+$('reset').onclick = () => $('resetConfirm').classList.remove('hidden');
+$('resetNo').onclick = () => $('resetConfirm').classList.add('hidden');
+$('resetYes').onclick = () => { progress = {}; saveProgress(); drawProgress(); };
 
 $('start').onclick = start;
 $('again').onclick = start;
