@@ -1,17 +1,17 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1e1b4b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Times Tables">
+<meta name="apple-mobile-web-app-title" content="Einmaleins">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
-<title>Times Tables Trainer</title>
+<title>Einmaleins-Trainer</title>
 <style>
   :root { --bg:#1e1b4b; --card:#312e81; --accent:#fbbf24; --good:#34d399; --bad:#f87171; --mid:#fbbf24; --none:#4b4b7a; --text:#f5f3ff; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -101,17 +101,17 @@
 
   <!-- Setup screen -->
   <div id="setup">
-    <h1>✖️ Times Tables</h1>
-    <p class="sub">Pick the tables you want to practise</p>
+    <h1>✖️ Einmaleins</h1>
+    <p class="sub">Wähle die Reihen, die du üben möchtest</p>
     <div class="tables" id="tables"></div>
     <div class="row">
-      <button id="all">All</button>
-      <button id="none">None</button>
+      <button id="all">Alle</button>
+      <button id="none">Keine</button>
       <button id="hard">7–12</button>
     </div>
     <div class="msg" id="setupmsg"></div>
-    <button class="big" id="start">Start!</button>
-    <div><button class="link" id="showprogress">📊 My progress</button></div>
+    <button class="big" id="start">Los geht's!</button>
+    <div><button class="link" id="showprogress">📊 Mein Fortschritt</button></div>
   </div>
 
   <!-- Quiz screen -->
@@ -127,9 +127,9 @@
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
-      <button class="del" data-k="del" aria-label="Delete">⌫</button>
+      <button class="del" data-k="del" aria-label="Löschen">⌫</button>
       <button data-k="0">0</button>
-      <button class="ok" data-k="ok">Check</button>
+      <button class="ok" data-k="ok">Prüfen</button>
     </div>
   </div>
 
@@ -139,32 +139,32 @@
     <div class="stars" id="stars"></div>
     <p class="sub" id="rscore"></p>
     <p class="tricky" id="tricky"></p>
-    <button class="big" id="again">Play again</button>
+    <button class="big" id="again">Nochmal</button>
     <div class="row" style="margin-top:16px">
-      <button id="menu">Change tables</button>
-      <button id="resprogress">📊 My progress</button>
+      <button id="menu">Reihen ändern</button>
+      <button id="resprogress">📊 Mein Fortschritt</button>
     </div>
   </div>
 
   <!-- Progress screen -->
   <div id="progressScreen" class="hidden">
-    <h1>📊 My progress</h1>
+    <h1>📊 Mein Fortschritt</h1>
     <p class="sub" id="pstats"></p>
     <div class="grid" id="grid"></div>
-    <div class="pdetail" id="pdetail">Tap a square to see how it's going</div>
+    <div class="pdetail" id="pdetail">Tippe auf ein Feld für Details</div>
     <div class="legend">
-      <span><i class="s-good"></i>Learned</span>
-      <span><i class="s-mid"></i>Getting there</span>
-      <span><i class="s-weak"></i>Needs work</span>
-      <span><i class="s-none"></i>Not tried</span>
+      <span><i class="s-good"></i>Gelernt</span>
+      <span><i class="s-mid"></i>Fast geschafft</span>
+      <span><i class="s-weak"></i>Üben</span>
+      <span><i class="s-none"></i>Noch nicht geübt</span>
     </div>
-    <button class="big" id="pback">Back</button>
+    <button class="big" id="pback">Zurück</button>
     <div>
-      <button class="link" id="reset">Reset progress</button>
+      <button class="link" id="reset">Fortschritt zurücksetzen</button>
       <div id="resetConfirm" class="row hidden" style="margin-top:10px">
-        <span style="align-self:center">Delete all progress?</span>
-        <button class="danger" id="resetYes">Yes, delete</button>
-        <button id="resetNo">Cancel</button>
+        <span style="align-self:center">Ganzen Fortschritt löschen?</span>
+        <button class="danger" id="resetYes">Ja, löschen</button>
+        <button id="resetNo">Abbrechen</button>
       </div>
     </div>
   </div>
@@ -272,7 +272,7 @@ function buildQuestions() {
 
 // ---- game ----
 function start() {
-  if (selected.size === 0) { $('setupmsg').textContent = 'Pick at least one table!'; show('setup'); return; }
+  if (selected.size === 0) { $('setupmsg').textContent = 'Wähle mindestens eine Reihe!'; show('setup'); return; }
   questions = buildQuestions();
   firstTotal = questions.length;
   idx = 0; score = 0; streak = 0; best = 0; missed = [];
@@ -284,7 +284,7 @@ function nextQuestion() {
   if (idx >= questions.length) return finish();
   const q = questions[idx];
   $('question').textContent = `${q.a} × ${q.b}`;
-  $('qnum').textContent = q.retry ? 'Try again 🔁' : `Question ${Math.min(idx+1, firstTotal)}/${firstTotal}`;
+  $('qnum').textContent = q.retry ? 'Nochmal versuchen 🔁' : `Frage ${Math.min(idx+1, firstTotal)}/${firstTotal}`;
   $('score').textContent = `⭐ ${score}`;
   $('streak').textContent = streak >= 2 ? `🔥 ${streak}` : '';
   $('progress').style.width = (idx / questions.length * 100) + '%';
@@ -327,14 +327,14 @@ function check() {
   if (ok) {
     streak++; best = Math.max(best, streak);
     if (!q.retry) score++;
-    const praise = ['Yes!','Brilliant!','Spot on!','Nailed it!','Super!'];
+    const praise = ['Ja!','Super!','Richtig!','Genau!','Spitze!'];
     $('feedback').innerHTML = `<span class="good">${praise[Math.floor(Math.random()*praise.length)]}</span>`;
     idx++;
     setTimeout(nextQuestion, 600);
   } else {
     streak = 0;
     missed.push(`${q.a} × ${q.b} = ${correct}`);
-    $('feedback').innerHTML = `<span class="bad">Not quite — ${q.a} × ${q.b} = ${correct}</span>`;
+    $('feedback').innerHTML = `<span class="bad">Leider falsch — ${q.a} × ${q.b} = ${correct}</span>`;
     // bring it back a few questions later (or at the end if the round is nearly over)
     const at = Math.min(idx + 1 + RETRY_GAP, questions.length);
     questions.splice(at, 0, {a:q.a, b:q.b, retry:true});
@@ -347,12 +347,12 @@ function finish() {
   show('result');
   lastScreen = 'result';
   const pct = score / firstTotal;
-  $('rtitle').textContent = pct === 1 ? 'Perfect! 🏆' : pct >= .8 ? 'Great job! 🎉' : pct >= .5 ? 'Good effort! 💪' : 'Keep practising! 🌱';
+  $('rtitle').textContent = pct === 1 ? 'Perfekt! 🏆' : pct >= .8 ? 'Sehr gut! 🎉' : pct >= .5 ? 'Gut gemacht! 💪' : 'Weiter üben! 🌱';
   const stars = Math.round(pct * 5);
   $('stars').textContent = '⭐'.repeat(stars) + '☆'.repeat(5 - stars);
-  $('rscore').textContent = `You got ${score} out of ${firstTotal} first time. Best streak: ${best}`;
+  $('rscore').textContent = `Du hattest ${score} von ${firstTotal} gleich beim ersten Mal richtig. Beste Serie: ${best}`;
   const uniq = [...new Set(missed)];
-  $('tricky').textContent = uniq.length ? 'Tricky ones: ' + uniq.join('  •  ') : '';
+  $('tricky').textContent = uniq.length ? 'Knifflige Aufgaben: ' + uniq.join('  •  ') : '';
 }
 
 // ---- progress screen ----
@@ -360,7 +360,7 @@ function drawProgress() {
   const g = $('grid');
   g.innerHTML = '';
   const cell = (text, cls) => { const d = document.createElement('div'); d.textContent = text; d.className = cls || ''; g.appendChild(d); return d; };
-  $('pdetail').textContent = "Tap a square to see how it's going";
+  $('pdetail').textContent = 'Tippe auf ein Feld für Details';
   cell('', 'h');
   for (let b = 1; b <= 12; b++) cell(b, 'h');
   let learned = 0;
@@ -372,7 +372,7 @@ function drawProgress() {
     }
   }
   for (let a = 1; a <= 12; a++) for (let b = a; b <= 12; b++) if (status(a, b) === 'good') learned++;
-  $('pstats').textContent = `${learned} of 78 facts learned`;
+  $('pstats').textContent = `${learned} von 78 Aufgaben gelernt`;
   $('resetConfirm').classList.add('hidden');
 }
 $('grid').addEventListener('click', e => {
@@ -383,7 +383,7 @@ $('grid').addEventListener('click', e => {
   const a = +c.dataset.a, b = +c.dataset.b;
   const p = progress[factKey(a, b)];
   $('pdetail').textContent = `${a} × ${b} = ${a*b} — ` +
-    (p ? `right ${p.right}, wrong ${p.wrong}` : 'not tried yet');
+    (p ? `richtig ${p.right}, falsch ${p.wrong}` : 'noch nicht geübt');
 });
 function showProgress(from) {
   lastScreen = from;

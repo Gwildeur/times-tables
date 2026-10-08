@@ -2,6 +2,10 @@
 
 Web app (`index.html` holds all the app code, no build step) for practising times tables. Opened by double-click in Safari, or hosted and added to the iPhone Home Screen. `manifest.webmanifest`, `sw.js` and `icons/` provide the Home Screen icon and offline support.
 
+## Language
+- The app is German only (the user's son is a native German speaker): all on-screen text, the page title and the Home Screen name are in German, addressing him with "du". New text must be German too.
+- Code, comments, CHANGELOG, README and commit messages stay in English.
+
 ## Commits
 - Claude commits after each finished and tested change.
 - Before every commit, follow the `commit-messages` skill (`.claude/skills/commit-messages/SKILL.md`): message format, what to stage, and what never to do.

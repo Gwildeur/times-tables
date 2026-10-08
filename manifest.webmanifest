@@ -1,8 +1,9 @@
 {
-  "name": "Times Tables Trainer",
-  "short_name": "Times Tables",
-  "description": "Practise your times tables",
+  "name": "Einmaleins-Trainer",
+  "short_name": "Einmaleins",
+  "description": "Übe das Einmaleins",
   "start_url": "./",
+  "lang": "de",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

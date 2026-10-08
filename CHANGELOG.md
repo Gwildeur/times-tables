@@ -12,6 +12,7 @@ Versions follow [Semantic Versioning](https://semver.org/): new features bump th
 - Tap a square in the progress grid to see that fact and how often it was right or wrong.
 
 ### Changed
+- The whole app is now in German (it is called "Einmaleins-Trainer"), including the Home Screen name and the praise and result messages. English is no longer available.
 - On phones the app now uses the whole screen, with the keypad at the bottom and room for the notch and the Home bar.
 - The progress grid fits the width of a phone screen.
 - Buttons are bigger and easier to hit with a finger, and double-tap zoom is switched off.

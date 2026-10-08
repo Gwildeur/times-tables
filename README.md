@@ -1,6 +1,6 @@
-# Times Tables Trainer
+# Times Tables Trainer (Einmaleins-Trainer)
 
-A simple app for practising times tables. Open `index.html` in Safari (double-click it) and play.
+A simple app for practising times tables. The app itself is in German. Open `index.html` in Safari (double-click it) and play.
 
 - Pick which tables (1–12) to practise
 - 10 questions per round, about half chosen from facts not yet learned
