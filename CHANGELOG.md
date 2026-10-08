@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/): new features bump th
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-09
+
 ### Added
 - On-screen number keypad with a Check button, so answers can be entered on an iPhone (the phone's own number pad has no Return key). Typing on a computer keyboard still works.
 - Can be added to the iPhone Home Screen as an app, with its own icon and name, opening full-screen.
