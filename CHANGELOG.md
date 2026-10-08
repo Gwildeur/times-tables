@@ -5,6 +5,8 @@ Versions follow [Semantic Versioning](https://semver.org/): new features bump th
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-09
+
 ### Fixed
 - Offline mode no longer saves error pages, so a temporary server problem can't show up later when the phone is offline.
 - Damaged saved progress is now ignored instead of possibly breaking the app.

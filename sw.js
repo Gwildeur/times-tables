@@ -1,6 +1,6 @@
 // Offline support: keep a copy of the app so it opens without internet.
 // Bump CACHE when releasing so phones pick up the new version.
-const CACHE = 'times-tables-v0.3.0';
+const CACHE = 'times-tables-v0.3.1';
 const FILES = ['./', 'index.html', 'manifest.webmanifest',
                'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
