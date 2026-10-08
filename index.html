@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; manifest-src 'self'; worker-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="theme-color" content="#1e1b4b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -187,8 +188,22 @@ let lastScreen = 'setup';
 const factKey = (a, b) => `${Math.min(a,b)}x${Math.max(a,b)}`;
 let progress = loadProgress();
 
+// Only accept well-formed entries ("7x8" with counts), so damaged saved data cannot break the app.
 function loadProgress() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+  const clean = {};
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+      const count = v => Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
+      for (const k of Object.keys(raw)) {
+        const m = /^(\d{1,2})x(\d{1,2})$/.exec(k), p = raw[k];
+        if (!m || !p || typeof p !== 'object') continue;
+        if (+m[1] < 1 || +m[1] > +m[2] || +m[2] > 12) continue;
+        clean[k] = {right: count(p.right), wrong: count(p.wrong), streak: count(p.streak)};
+      }
+    }
+  } catch (e) { /* storage unavailable or unreadable: start fresh */ }
+  return clean;
 }
 function saveProgress() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) { /* storage unavailable */ }

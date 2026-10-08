@@ -17,15 +17,20 @@ self.addEventListener('activate', e => {
 });
 
 // Network first (so updates arrive), falling back to the saved copy when offline.
+// Only successful responses from this site are saved, never error pages.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const sameSite = new URL(e.request.url).origin === self.location.origin;
   e.respondWith(
     fetch(e.request)
       .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
+        if (sameSite && res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+        }
         return res;
       })
-      .catch(() => caches.match(e.request).then(r => r || caches.match('index.html')))
+      .catch(() => caches.match(e.request).then(r =>
+        r || (e.request.mode === 'navigate' ? caches.match('index.html') : Response.error())))
   );
 });
